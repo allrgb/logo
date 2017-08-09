@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="270" height="240">
+    <style>
+        /* <![CDATA[ */
+        .r {
+        fill: red;
+        }
+    /* ]]> */
+    </style>
+    <polygon class="r" points="5,5 265,5 135,230"/>
+</svg>
