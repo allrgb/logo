@@ -8,7 +8,7 @@
 <dt>Repository (private)</dt>
 <dd>https://gitlab.com/allrgb/logo.git</dd>
 <dt>Mirror repository (public)</dt>
-<dd>https://github.com/allrgb/logo</dd>
+<dd>https://github.com/allrgb/logo.git</dd>
 <dt>Interactive demo</dt>
 <dd>https://delogo.nl/allrgb</dd>
 <dt>Production logo</dt>
