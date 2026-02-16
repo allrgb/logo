@@ -50,7 +50,7 @@
             border:1px solid var(--line); border-radius:10px; padding:8px 10px;
             outline:none;
         }
-        textarea { min-height:120px; resize:vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:12px; }
+        textarea { min-height:140px; resize:vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:12px; }
 
         .btns { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
         button {
@@ -122,7 +122,7 @@
 
         <div class="row">
             <label for="cols">Columns</label>
-            <input id="cols" type="number" min="2" max="400" value="16" />
+            <input id="cols" type="number" min="2" max="400" value="24" />
         </div>
         <div class="row">
             <label for="rows">Rows</label>
@@ -138,6 +138,7 @@
             <select id="palette">
                 <option value="binary" selected>Binary (off/white)</option>
                 <option value="rgb">RGB cycle (off/black/R/G/B)</option>
+                <option value="rgbcymk">RGBCYMK cycle (off/R/G/B/C/Y/M/K)</option>
                 <option value="custom">Custom (comma list)</option>
             </select>
         </div>
@@ -176,13 +177,13 @@
         </div>
 
         <div class="row" style="align-items:flex-start;">
-            <label for="io">JSON / SVG</label>
-            <textarea id="io" placeholder="Exported JSON/SVG will appear here. Paste JSON here and click “Load JSON”."></textarea>
+            <label for="io">Live JSON</label>
+            <textarea id="io" placeholder="Live JSON will appear here. (Auto-updates pause while you focus this field to paste/edit.)"></textarea>
         </div>
 
         <div class="pill">
             <div><b>Editing:</b> click triangles to toggle. Drag to paint. Shift-click forces “cycle”.</div>
-            <div><b>Shortcuts:</b> G grid · C clear · I invert · E export SVG</div>
+            <div><b>Shortcuts:</b> G grid · C clear · I invert · E copy SVG</div>
         </div>
     </div>
 
@@ -191,7 +192,7 @@
             <div class="kpi">Glyph: <b id="kGlyph">–</b></div>
             <div class="kpi">Triangles: <b id="kTri">–</b></div>
             <div class="kpi">Active: <b id="kOn">–</b></div>
-            <div class="hint">Click/drag to draw. Export per glyph as SVG/JSON.</div>
+            <div class="hint">JSON is live; focus the JSON field to pause updates for pasting.</div>
         </div>
         <svg id="svg" xmlns="http://www.w3.org/2000/svg" aria-label="Triangle grid editor"></svg>
     </div>
@@ -245,7 +246,7 @@
         }
 
         // ---- grid + state ----
-        let cols = 16, rows = 16, side = 22;
+        let cols = 24, rows = 16, side = 22;
         let h = side * Math.sqrt(3) / 2;
         let showGrid = true;
 
@@ -259,8 +260,19 @@
 
         function getPalette() {
             const mode = paletteEl.value;
-            if (mode === "binary") return ["transparent", "#ffffff"]; // requested: ON is white
+            if (mode === "binary") return ["transparent", "#ffffff"]; // ON is white
             if (mode === "rgb") return ["transparent", "#000000", "#ff0000", "#00ff00", "#0000ff"];
+            if (mode === "rgbcymk") return [
+                "transparent",
+                "#ff0000", // R
+                "#00ff00", // G
+                "#0000ff", // B
+                "#00ffff", // C
+                "#ffff00", // Y
+                "#ff00ff", // M
+                "#000000"  // K
+            ];
+            // custom
             const raw = customColorsEl.value.split(",").map(s => s.trim()).filter(Boolean);
             const pal = ["transparent", ...raw];
             return pal.length >= 2 ? pal : ["transparent", "#ffffff"];
@@ -305,8 +317,32 @@
             return pts.map(p => `${p[0].toFixed(4)},${p[1].toFixed(4)}`).join(" ");
         }
 
+        // ---- live JSON (pauses while textarea is focused) ----
+        let ioLocked = false;
+        ioEl.addEventListener("focus", () => { ioLocked = true; });
+        ioEl.addEventListener("blur",  () => { ioLocked = false; syncJson(); });
+
+        function exportJson() {
+            const pal = getPalette();
+            return JSON.stringify({
+                version: 3,
+                glyph: (glyphEl.value || "").trim(),
+                cols, rows, side,
+                paletteMode: paletteEl.value,
+                customColors: customColorsEl.value,
+                showGrid,
+                state: Array.from(state),
+                palette: pal
+            }, null, 2);
+        }
+
+        function syncJson() {
+            if (ioLocked) return;
+            ioEl.value = exportJson();
+        }
+
         function rebuild(preserve=true) {
-            const newCols = Math.max(2, Math.min(400, parseInt(colsEl.value || "16", 10)));
+            const newCols = Math.max(2, Math.min(400, parseInt(colsEl.value || "24", 10)));
             const newRows = Math.max(2, Math.min(400, parseInt(rowsEl.value || "16", 10)));
             const newSide = Math.max(4, Math.min(80, parseInt(sideEl.value || "22", 10)));
             const newH = newSide * Math.sqrt(3) / 2;
@@ -357,6 +393,7 @@
 
             updatePaintIndexOptions();
             refreshKpis();
+            syncJson();
         }
 
         function refreshKpis() {
@@ -403,6 +440,9 @@
 
             state[i] = nv;
             applyFill(poly, nv);
+
+            refreshKpis();
+            syncJson();
         }
 
         function onPointerDown(evt) {
@@ -410,7 +450,6 @@
             drawing = true;
             poly.setPointerCapture(evt.pointerId);
             editTriangle(poly, evt);
-            refreshKpis();
         }
 
         function onPointerMove(evt) {
@@ -418,7 +457,6 @@
             const t = evt.target;
             if (t && t.classList && t.classList.contains("tri")) {
                 editTriangle(t, evt);
-                refreshKpis();
             }
         }
 
@@ -436,6 +474,7 @@
                 applyFill(poly, nv);
             });
             refreshKpis();
+            syncJson();
         }
 
         function clearAll() { setAll(() => 0); }
@@ -452,6 +491,7 @@
                 if (showGrid) p.classList.add("gridline");
                 else p.classList.remove("gridline");
             });
+            syncJson();
         }
 
         function exportSvgActiveOnly() {
@@ -478,20 +518,6 @@
 
             parts.push(`</svg>`);
             return parts.join("\n");
-        }
-
-        function exportJson() {
-            const pal = getPalette();
-            return JSON.stringify({
-                version: 2,
-                glyph: (glyphEl.value || "").trim(),
-                cols, rows, side,
-                paletteMode: paletteEl.value,
-                customColors: customColorsEl.value,
-                showGrid,
-                state: Array.from(state),
-                palette: pal
-            }, null, 2);
         }
 
         function loadJson(text) {
@@ -533,6 +559,7 @@
             updatePaintIndexOptions();
             refreshKpis();
             saveGlyphSetting();
+            syncJson();
         }
 
         function escapeXml(s){
@@ -549,10 +576,13 @@
                 await navigator.clipboard.writeText(text);
                 return true;
             } catch {
+                // fallback: temporarily put in textarea without disrupting live JSON too much
+                const prev = ioEl.value;
                 ioEl.value = text;
                 ioEl.focus();
                 ioEl.select();
-                try { document.execCommand("copy"); return true; } catch { return false; }
+                try { document.execCommand("copy"); ioEl.blur(); ioEl.value = prev; return true; }
+                catch { ioEl.value = prev; return false; }
             }
         }
 
@@ -579,6 +609,7 @@
         glyphEl.addEventListener("input", () => {
             refreshKpis();
             saveGlyphSetting();
+            syncJson();
         });
 
         // UI events
@@ -589,14 +620,12 @@
 
         el("copySvg").addEventListener("click", async () => {
             const s = exportSvgActiveOnly();
-            ioEl.value = s;
             const ok = await copyToClipboard(s);
-            if (!ok) alert("Could not copy. SVG is in the text area.");
+            if (!ok) alert("Could not copy SVG.");
         });
 
         el("downloadSvg").addEventListener("click", () => {
             const s = exportSvgActiveOnly();
-            ioEl.value = s;
             const glyph = (glyphEl.value || "").trim();
             const name = glyph ? `glyph-${glyph}.svg` : "triangles.svg";
             downloadText(name.replaceAll(/[^\w\-\.]+/g, "_"), s);
@@ -604,9 +633,8 @@
 
         el("copyJson").addEventListener("click", async () => {
             const j = exportJson();
-            ioEl.value = j;
             const ok = await copyToClipboard(j);
-            if (!ok) alert("Could not copy. JSON is in the text area.");
+            if (!ok) alert("Could not copy JSON.");
         });
 
         el("loadJson").addEventListener("click", () => loadJson(ioEl.value));
@@ -614,21 +642,27 @@
         paletteEl.addEventListener("change", () => {
             customRow.style.display = (paletteEl.value === "custom") ? "flex" : "none";
             updatePaintIndexOptions();
-            // repaint with new palette
+
+            // clamp + repaint with new palette
             const pal = getPalette();
             const tris = svg.querySelectorAll(".tri");
             tris.forEach(poly => {
                 const r = parseInt(poly.dataset.r, 10);
                 const c = parseInt(poly.dataset.c, 10);
-                applyFill(poly, Math.min(state[idx(r,c)], pal.length - 1));
-                state[idx(r,c)] = Math.min(state[idx(r,c)], pal.length - 1);
+                const i = idx(r,c);
+                const v = Math.min(state[i], pal.length - 1);
+                state[i] = v;
+                applyFill(poly, v);
             });
+
             refreshKpis();
+            syncJson();
         });
 
         customColorsEl.addEventListener("input", () => {
             if (paletteEl.value !== "custom") return;
             updatePaintIndexOptions();
+            syncJson();
         });
 
         toolEl.addEventListener("change", () => {
@@ -647,11 +681,7 @@
             if (k === "g") toggleGridlines();
             if (k === "c") clearAll();
             if (k === "i") invertBinary();
-            if (k === "e") {
-                const s = exportSvgActiveOnly();
-                ioEl.value = s;
-                copyToClipboard(s);
-            }
+            if (k === "e") copyToClipboard(exportSvgActiveOnly());
         });
 
         // init
@@ -663,6 +693,7 @@
         updatePaintIndexOptions();
         rebuild(false);
         refreshKpis();
+        syncJson();
     })();
 </script>
 </body>
