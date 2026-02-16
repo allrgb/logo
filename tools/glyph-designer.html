@@ -5,43 +5,98 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Triangle Grid SVG Editor</title>
     <style>
-        :root { --bg:#0b0c10; --panel:#141623; --ink:#e8e8ef; --muted:#a8acc0; --line:#2b2f45; }
-        html, body { height:100%; margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial; background:var(--bg); color:var(--ink); }
-        .wrap { display:grid; grid-template-columns: 360px 1fr; height:100%; }
+        /* Theme variables (set via [data-theme]) */
+        :root{
+            --bg:#0b0c10;
+            --panel:#141623;
+            --ink:#e8e8ef;
+            --muted:#a8acc0;
+            --line:#2b2f45;
+            --field:#0f1120;
+
+            --gridStroke: rgba(255,255,255,.22);
+            --hoverStroke: rgba(255,255,255,.95);
+            --hoverShadow: rgba(255,255,255,.55);
+            --topbarBg: rgba(20,22,35,.72);
+        }
+        html[data-theme="light"]{
+            --bg:#f3f5fb;
+            --panel:#ffffff;
+            --ink:#141625;
+            --muted:#4b516a;
+            --line:#d9deef;
+            --field:#f6f7fc;
+
+            --gridStroke: rgba(0,0,0,.18);
+            --hoverStroke: rgba(0,0,0,.85);
+            --hoverShadow: rgba(0,0,0,.20);
+            --topbarBg: rgba(255,255,255,.78);
+        }
+
+        html, body { height:100%; margin:0; }
+        body{
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial;
+            background:var(--bg); color:var(--ink);
+        }
+        .wrap { display:grid; grid-template-columns: 380px 1fr; height:100%; }
         .panel { background:var(--panel); border-right:1px solid var(--line); padding:14px; overflow:auto; }
         h1 { font-size:16px; margin:0 0 10px; letter-spacing:.2px; }
+
         .row { display:flex; gap:10px; align-items:center; margin:10px 0; }
-        .row > label { flex: 0 0 120px; color:var(--muted); font-size:12px; }
-        input[type="number"], select, textarea {
-            width:100%; box-sizing:border-box; background:#0f1120; color:var(--ink);
+        .row > label { flex: 0 0 130px; color:var(--muted); font-size:12px; }
+
+        input[type="number"], input[type="text"], select, textarea {
+            width:100%; box-sizing:border-box; background:var(--field); color:var(--ink);
             border:1px solid var(--line); border-radius:10px; padding:8px 10px;
             outline:none;
         }
         textarea { min-height:120px; resize:vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size:12px; }
+
         .btns { display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
         button {
-            background:#1b1f35; color:var(--ink); border:1px solid var(--line);
-            padding:8px 10px; border-radius:12px; cursor:pointer; font-weight:600; font-size:12px;
+            background: color-mix(in oklab, var(--panel) 70%, var(--field));
+            color:var(--ink);
+            border:1px solid var(--line);
+            padding:8px 10px;
+            border-radius:12px;
+            cursor:pointer;
+            font-weight:600;
+            font-size:12px;
         }
-        button:hover { filter: brightness(1.15); }
+        button:hover { filter: brightness(1.08); }
         button:active { transform: translateY(1px); }
+
         .pill { font-size:12px; color:var(--muted); margin-top:8px; line-height:1.4; }
+
         .stage { position:relative; overflow:hidden; }
         .topbar {
             position:absolute; inset:12px 12px auto 12px;
-            display:flex; gap:10px; align-items:center;
-            background: rgba(20,22,35,.72); border:1px solid var(--line);
-            border-radius:16px; padding:8px 10px; backdrop-filter: blur(8px);
+            display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+            background: var(--topbarBg);
+            border:1px solid var(--line);
+            border-radius:16px; padding:8px 10px;
+            backdrop-filter: blur(8px);
             z-index:10;
         }
         .kpi { color:var(--muted); font-size:12px; }
         .kpi b { color:var(--ink); }
         .hint { color:var(--muted); font-size:12px; }
+
         svg { width:100%; height:100%; display:block; }
-        .tri { cursor:pointer; }
-        .tri:hover { opacity:.85; }
-        .gridline { stroke: rgba(255,255,255,.22); stroke-width: 1; vector-effect: non-scaling-stroke; }
+
+        .tri { cursor:pointer; transition: filter .06s ease, opacity .06s ease; }
+        .tri:hover{
+            opacity: 1;
+            filter: drop-shadow(0 0 6px var(--hoverShadow));
+            stroke: var(--hoverStroke);
+            stroke-width: 2.2;
+            vector-effect: non-scaling-stroke;
+        }
+
+        .tri.gridline { stroke: var(--gridStroke); stroke-width: 1; vector-effect: non-scaling-stroke; }
         .off { fill: transparent; }
+
+        .divider { height:1px; background:var(--line); margin:12px 0; }
     </style>
 </head>
 <body>
@@ -50,22 +105,38 @@
         <h1>Triangle Grid SVG Editor</h1>
 
         <div class="row">
+            <label for="glyph">Glyph / character</label>
+            <input id="glyph" type="text" maxlength="24" placeholder="e.g. A, g, ß, ij, ampersand…" />
+        </div>
+
+        <div class="row">
+            <label for="theme">Appearance</label>
+            <select id="theme">
+                <option value="auto" selected>Auto (system)</option>
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+            </select>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="row">
             <label for="cols">Columns</label>
-            <input id="cols" type="number" min="2" max="400" value="64" />
+            <input id="cols" type="number" min="2" max="400" value="16" />
         </div>
         <div class="row">
             <label for="rows">Rows</label>
-            <input id="rows" type="number" min="2" max="400" value="64" />
+            <input id="rows" type="number" min="2" max="400" value="16" />
         </div>
         <div class="row">
             <label for="side">Triangle side</label>
-            <input id="side" type="number" min="4" max="80" value="18" />
+            <input id="side" type="number" min="4" max="80" value="22" />
         </div>
 
         <div class="row">
             <label for="palette">Palette</label>
             <select id="palette">
-                <option value="binary" selected>Binary (off/black)</option>
+                <option value="binary" selected>Binary (off/white)</option>
                 <option value="rgb">RGB cycle (off/black/R/G/B)</option>
                 <option value="custom">Custom (comma list)</option>
             </select>
@@ -73,7 +144,7 @@
 
         <div class="row" id="customRow" style="display:none;">
             <label for="customColors">Custom colors</label>
-            <input id="customColors" value="#000000,#ff0000,#00ff00,#0000ff,#ffffff" />
+            <input id="customColors" value="#ffffff,#000000,#ff0000,#00ff00,#0000ff" />
         </div>
 
         <div class="row">
@@ -106,21 +177,21 @@
 
         <div class="row" style="align-items:flex-start;">
             <label for="io">JSON / SVG</label>
-            <textarea id="io" placeholder="Exported JSON will appear here. Paste JSON here and click “Load JSON”."></textarea>
+            <textarea id="io" placeholder="Exported JSON/SVG will appear here. Paste JSON here and click “Load JSON”."></textarea>
         </div>
 
         <div class="pill">
-            <div><b>Editing:</b> click triangles to toggle. Drag to paint. Shift-click also cycles.</div>
-            <div><b>Coords:</b> each triangle is indexed by (row, col) in a regular equilateral tessellation.</div>
-            <div><b>Tip for type design:</b> keep one grid size for all glyphs, export JSON per glyph, then render into font units later.</div>
+            <div><b>Editing:</b> click triangles to toggle. Drag to paint. Shift-click forces “cycle”.</div>
+            <div><b>Shortcuts:</b> G grid · C clear · I invert · E export SVG</div>
         </div>
     </div>
 
     <div class="stage">
         <div class="topbar">
+            <div class="kpi">Glyph: <b id="kGlyph">–</b></div>
             <div class="kpi">Triangles: <b id="kTri">–</b></div>
             <div class="kpi">Active: <b id="kOn">–</b></div>
-            <div class="hint">Shortcuts: G grid · C clear · I invert · E export SVG</div>
+            <div class="hint">Click/drag to draw. Export per glyph as SVG/JSON.</div>
         </div>
         <svg id="svg" xmlns="http://www.w3.org/2000/svg" aria-label="Triangle grid editor"></svg>
     </div>
@@ -134,32 +205,65 @@
         const colsEl = el("cols");
         const rowsEl = el("rows");
         const sideEl = el("side");
+        const glyphEl = el("glyph");
+
         const paletteEl = el("palette");
         const customRow = el("customRow");
         const customColorsEl = el("customColors");
+
         const toolEl = el("tool");
         const paintRow = el("paintRow");
         const paintIndexEl = el("paintIndex");
+
+        const themeEl = el("theme");
         const ioEl = el("io");
 
+        const kGlyphEl = el("kGlyph");
         const kTriEl = el("kTri");
         const kOnEl = el("kOn");
 
-        let cols = 64, rows = 64, side = 18;
+        // ---- theme (dark/light/auto) ----
+        const mql = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+        function resolveAutoTheme() { return (mql && mql.matches) ? "dark" : "light"; }
+        function applyTheme(mode) {
+            const actual = (mode === "auto") ? resolveAutoTheme() : mode;
+            document.documentElement.setAttribute("data-theme", actual);
+        }
+        function loadThemeSetting() {
+            const saved = localStorage.getItem("triGridTheme") || "auto";
+            themeEl.value = saved;
+            applyTheme(saved);
+        }
+        themeEl.addEventListener("change", () => {
+            localStorage.setItem("triGridTheme", themeEl.value);
+            applyTheme(themeEl.value);
+        });
+        if (mql && mql.addEventListener) {
+            mql.addEventListener("change", () => {
+                if (themeEl.value === "auto") applyTheme("auto");
+            });
+        }
+
+        // ---- grid + state ----
+        let cols = 16, rows = 16, side = 22;
         let h = side * Math.sqrt(3) / 2;
         let showGrid = true;
 
         // state values are palette indices (0 = off)
         let state = new Uint8Array(cols * rows);
 
+        function getGlyphLabel() {
+            const s = (glyphEl.value || "").trim();
+            return s.length ? s : "–";
+        }
+
         function getPalette() {
             const mode = paletteEl.value;
-            if (mode === "binary") return ["transparent", "#000000"];
+            if (mode === "binary") return ["transparent", "#ffffff"]; // requested: ON is white
             if (mode === "rgb") return ["transparent", "#000000", "#ff0000", "#00ff00", "#0000ff"];
-            // custom
             const raw = customColorsEl.value.split(",").map(s => s.trim()).filter(Boolean);
             const pal = ["transparent", ...raw];
-            return pal.length >= 2 ? pal : ["transparent", "#000000"];
+            return pal.length >= 2 ? pal : ["transparent", "#ffffff"];
         }
 
         function updatePaintIndexOptions() {
@@ -184,15 +288,15 @@
             const up = ((r + c) % 2) === 0;
             if (up) {
                 return [
-                    [x0,     y0 + h],
-                    [x0 + side/2, y0],
-                    [x0 + side,   y0 + h]
+                    [x0,           y0 + h],
+                    [x0 + side/2,  y0],
+                    [x0 + side,    y0 + h]
                 ];
             } else {
                 return [
-                    [x0,     y0],
-                    [x0 + side, y0],
-                    [x0 + side/2, y0 + h]
+                    [x0,           y0],
+                    [x0 + side,    y0],
+                    [x0 + side/2,  y0 + h]
                 ];
             }
         }
@@ -201,19 +305,28 @@
             return pts.map(p => `${p[0].toFixed(4)},${p[1].toFixed(4)}`).join(" ");
         }
 
-        function rebuild() {
-            cols = Math.max(2, Math.min(400, parseInt(colsEl.value || "64", 10)));
-            rows = Math.max(2, Math.min(400, parseInt(rowsEl.value || "64", 10)));
-            side = Math.max(4, Math.min(80, parseInt(sideEl.value || "18", 10)));
-            h = side * Math.sqrt(3) / 2;
+        function rebuild(preserve=true) {
+            const newCols = Math.max(2, Math.min(400, parseInt(colsEl.value || "16", 10)));
+            const newRows = Math.max(2, Math.min(400, parseInt(rowsEl.value || "16", 10)));
+            const newSide = Math.max(4, Math.min(80, parseInt(sideEl.value || "22", 10)));
+            const newH = newSide * Math.sqrt(3) / 2;
 
-            // preserve old state when possible
-            const old = state;
-            const oldCols = old.length ? (old.length / (rows || 1)) : cols; // not reliable, so just reset safely
+            const oldState = state;
+            const oldCols = cols;
+            const oldRows = rows;
+
+            cols = newCols; rows = newRows; side = newSide; h = newH;
+
             state = new Uint8Array(cols * rows);
-            // If dimensions unchanged, keep state; else keep overlap area from previous state if we can infer old dims
-            // (We store dims in JSON anyway; simplest: only preserve if same size)
-            if (old.length === state.length) state.set(old);
+            if (preserve && oldState && oldState.length) {
+                const rMax = Math.min(oldRows, rows);
+                const cMax = Math.min(oldCols, cols);
+                for (let r = 0; r < rMax; r++) {
+                    for (let c = 0; c < cMax; c++) {
+                        state[idx(r,c)] = oldState[r * oldCols + c];
+                    }
+                }
+            }
 
             const width = (cols + 1) * side / 2;
             const height = rows * h;
@@ -232,12 +345,11 @@
                 for (let c = 0; c < cols; c++) {
                     const p = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
                     p.classList.add("tri");
+                    if (showGrid) p.classList.add("gridline");
                     p.dataset.r = String(r);
                     p.dataset.c = String(c);
                     p.setAttribute("points", pointsAttr(triPoints(r, c)));
                     p.setAttribute("fill", pal[state[idx(r,c)]] || "transparent");
-                    if (showGrid) p.classList.add("gridline");
-                    else p.classList.remove("gridline");
                     p.addEventListener("pointerdown", onPointerDown);
                     g.appendChild(p);
                 }
@@ -250,6 +362,7 @@
         function refreshKpis() {
             let on = 0;
             for (let i = 0; i < state.length; i++) if (state[i] !== 0) on++;
+            kGlyphEl.textContent = getGlyphLabel();
             kTriEl.textContent = String(state.length);
             kOnEl.textContent = String(on);
         }
@@ -261,19 +374,15 @@
         }
 
         let drawing = false;
-        let drawMode = "toggle"; // toggle | paint | erase
-        let drawValue = 1;
 
         function currentDrawSettings(evt) {
-            drawMode = toolEl.value;
-            drawValue = parseInt(paintIndexEl.value || "1", 10);
-            // Shift-click acts like cycle even in paint mode (handy)
+            let drawMode = toolEl.value; // toggle | paint | erase
+            const drawValue = parseInt(paintIndexEl.value || "1", 10);
             if (evt && evt.shiftKey) drawMode = "toggle";
             return { drawMode, drawValue };
         }
 
         function cycleValue(v, palLen) {
-            // cycle through 0..palLen-1
             let nv = v + 1;
             if (nv >= palLen) nv = 0;
             return nv;
@@ -349,12 +458,13 @@
             const pal = getPalette();
             const width = (cols + 1) * side / 2;
             const height = rows * h;
+            const glyph = (glyphEl.value || "").trim();
 
             const parts = [];
             parts.push(`<?xml version="1.0" encoding="UTF-8"?>`);
             parts.push(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}">`);
+            if (glyph) parts.push(`<title>${escapeXml(glyph)}</title>`);
 
-            // active triangles only (no grid strokes)
             const tris = svg.querySelectorAll(".tri");
             tris.forEach(poly => {
                 const r = parseInt(poly.dataset.r, 10);
@@ -362,7 +472,7 @@
                 const v = state[idx(r,c)];
                 if (v === 0) return;
                 const pts = poly.getAttribute("points");
-                const fill = pal[v] || "#000";
+                const fill = pal[v] || "#fff";
                 parts.push(`<polygon points="${pts}" fill="${fill}"/>`);
             });
 
@@ -373,7 +483,8 @@
         function exportJson() {
             const pal = getPalette();
             return JSON.stringify({
-                version: 1,
+                version: 2,
+                glyph: (glyphEl.value || "").trim(),
                 cols, rows, side,
                 paletteMode: paletteEl.value,
                 customColors: customColorsEl.value,
@@ -391,6 +502,7 @@
             if (!obj || typeof obj !== "object") { alert("Invalid JSON."); return; }
             if (!obj.cols || !obj.rows || !obj.side || !obj.state) { alert("Missing fields."); return; }
 
+            glyphEl.value = obj.glyph || "";
             colsEl.value = obj.cols;
             rowsEl.value = obj.rows;
             sideEl.value = obj.side;
@@ -399,17 +511,14 @@
             customColorsEl.value = obj.customColors || customColorsEl.value;
             showGrid = !!obj.showGrid;
 
-            // rebuild first (allocates new state)
-            rebuild();
+            rebuild(false);
 
-            // load state safely
             const arr = obj.state;
             for (let i = 0; i < state.length && i < arr.length; i++) {
                 const v = Number(arr[i]) | 0;
                 state[i] = v < 0 ? 0 : v;
             }
 
-            // repaint
             const pal = getPalette();
             const tris = svg.querySelectorAll(".tri");
             tris.forEach(poly => {
@@ -423,6 +532,16 @@
 
             updatePaintIndexOptions();
             refreshKpis();
+            saveGlyphSetting();
+        }
+
+        function escapeXml(s){
+            return String(s)
+                .replaceAll("&","&amp;")
+                .replaceAll("<","&lt;")
+                .replaceAll(">","&gt;")
+                .replaceAll('"',"&quot;")
+                .replaceAll("'","&apos;");
         }
 
         async function copyToClipboard(text) {
@@ -430,7 +549,6 @@
                 await navigator.clipboard.writeText(text);
                 return true;
             } catch {
-                // fallback
                 ioEl.value = text;
                 ioEl.focus();
                 ioEl.select();
@@ -450,8 +568,21 @@
             URL.revokeObjectURL(url);
         }
 
+        // Persist glyph label
+        function loadGlyphSetting(){
+            const saved = localStorage.getItem("triGridGlyph") || "";
+            glyphEl.value = saved;
+        }
+        function saveGlyphSetting(){
+            localStorage.setItem("triGridGlyph", (glyphEl.value || "").trim());
+        }
+        glyphEl.addEventListener("input", () => {
+            refreshKpis();
+            saveGlyphSetting();
+        });
+
         // UI events
-        el("rebuild").addEventListener("click", rebuild);
+        el("rebuild").addEventListener("click", () => rebuild(true));
         el("clear").addEventListener("click", clearAll);
         el("invert").addEventListener("click", invertBinary);
         el("toggleGrid").addEventListener("click", toggleGridlines);
@@ -466,7 +597,9 @@
         el("downloadSvg").addEventListener("click", () => {
             const s = exportSvgActiveOnly();
             ioEl.value = s;
-            downloadText("triangles.svg", s);
+            const glyph = (glyphEl.value || "").trim();
+            const name = glyph ? `glyph-${glyph}.svg` : "triangles.svg";
+            downloadText(name.replaceAll(/[^\w\-\.]+/g, "_"), s);
         });
 
         el("copyJson").addEventListener("click", async () => {
@@ -481,8 +614,22 @@
         paletteEl.addEventListener("change", () => {
             customRow.style.display = (paletteEl.value === "custom") ? "flex" : "none";
             updatePaintIndexOptions();
+            // repaint with new palette
+            const pal = getPalette();
+            const tris = svg.querySelectorAll(".tri");
+            tris.forEach(poly => {
+                const r = parseInt(poly.dataset.r, 10);
+                const c = parseInt(poly.dataset.c, 10);
+                applyFill(poly, Math.min(state[idx(r,c)], pal.length - 1));
+                state[idx(r,c)] = Math.min(state[idx(r,c)], pal.length - 1);
+            });
+            refreshKpis();
         });
-        customColorsEl.addEventListener("input", () => updatePaintIndexOptions());
+
+        customColorsEl.addEventListener("input", () => {
+            if (paletteEl.value !== "custom") return;
+            updatePaintIndexOptions();
+        });
 
         toolEl.addEventListener("change", () => {
             paintRow.style.display = (toolEl.value === "paint") ? "flex" : "none";
@@ -494,7 +641,8 @@
 
         // Shortcuts
         window.addEventListener("keydown", (e) => {
-            if (e.target && (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT" || e.target.tagName === "SELECT")) return;
+            const t = e.target;
+            if (t && (t.tagName === "TEXTAREA" || t.tagName === "INPUT" || t.tagName === "SELECT")) return;
             const k = e.key.toLowerCase();
             if (k === "g") toggleGridlines();
             if (k === "c") clearAll();
@@ -507,10 +655,14 @@
         });
 
         // init
+        loadThemeSetting();
+        loadGlyphSetting();
+
         customRow.style.display = "none";
         paintRow.style.display = "none";
         updatePaintIndexOptions();
-        rebuild();
+        rebuild(false);
+        refreshKpis();
     })();
 </script>
 </body>
