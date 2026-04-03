@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     class="logo-allrgb"
+     viewBox="0 0 336 290">
+    <title>allRGB</title>
+    <desc>allRGB logo.</desc>
+
+    <!-- Equilateral triangles with side 48 and height 24 * sqrt(3) -->
+    <defs>
+        <polygon id="tri-down" points="0 0 48 0 24 41.569219" />
+        <polygon id="tri-up" points="0 41.569219 24 0 48 41.569219" />
+    </defs>
+
+    <g class="logomark" fill="currentColor" style="mix-blend-mode:difference">
+        <g color="#ff0000">
+            <use href="#tri-down" x="48" y="41.569219" />
+            <use href="#tri-up"   x="72" y="41.569219" />
+            <use href="#tri-down" x="96" y="124.707658" />
+            <use href="#tri-up"   x="120" y="124.707658" />
+            <use href="#tri-down" x="120" y="166.276878" />
+        </g>
+
+        <g color="#ff00ff">
+            <use href="#tri-down" x="72" y="83.138439" />
+            <use href="#tri-up"   x="96" y="83.138439" />
+        </g>
+
+        <g color="#ffff00">
+            <use href="#tri-up"   x="144" y="166.276878" />
+            <use href="#tri-down" x="144" y="207.846097" />
+        </g>
+
+        <g color="#00ff00">
+            <use href="#tri-up"   x="168" y="124.707658" />
+            <use href="#tri-down" x="168" y="166.276878" />
+            <use href="#tri-down" x="192" y="124.707658" />
+            <use href="#tri-up"   x="216" y="41.569219" />
+            <use href="#tri-down" x="240" y="41.569219" />
+        </g>
+
+        <g color="#00ffff">
+            <use href="#tri-up"   x="192" y="83.138439" />
+            <use href="#tri-down" x="216" y="83.138439" />
+        </g>
+
+        <g color="#0000ff">
+            <use href="#tri-up"   x="48" y="83.138439" />
+            <use href="#tri-down" x="120" y="83.138439" />
+            <use href="#tri-up"   x="144" y="83.138439" />
+            <use href="#tri-down" x="168" y="83.138439" />
+            <use href="#tri-up"   x="240" y="83.138439" />
+        </g>
+    </g>
+</svg>
