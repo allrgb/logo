@@ -1,0 +1,23 @@
+{
+  "name": "allrgb/logo",
+  "description": "The allRGB logo.",
+  "type": "library",
+  "license": "proprietary",
+  "keywords": [
+    "allrgb",
+    "logo",
+    "svg",
+    "brand"
+  ],
+  "authors": [
+    {
+      "name": "ACJ"
+    }
+  ],
+  "require": {},
+  "extra": {
+    "branch-alias": {
+      "dev-main": "1.x-dev"
+    }
+  }
+}
